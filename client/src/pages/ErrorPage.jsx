@@ -1,8 +1,14 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
 
 const ErrorPage = () => {
   return (
-    <div>ErrorPage</div>
+    <section className='error-page'>
+      <div className="center">
+        <h2>Oops Page Not Found</h2>
+        <Link to='/' className='btn primary'>Home</Link>
+      </div>
+    </section>
   )
 }
 
