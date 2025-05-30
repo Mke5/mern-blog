@@ -18,7 +18,7 @@ const Login = () => {
         <h2>Sign In</h2>
         <form action="" className='form register__form'>
           <p className="form__error-message">This is an Error Message</p>
-          <input type="text" placeholder='Email' name='email' value={userData.email} onChange={changeInputHandler} /> 
+          <input type="text" placeholder='Email' name='email' value={userData.email} onChange={changeInputHandler} autoFocus/> 
           <input type="password" placeholder='Password' name='password' value={userData.password} onChange={changeInputHandler} />
           <button type="submit" className='btn primary'>Login</button>
         </form>

@@ -12,7 +12,7 @@ import CreatePost from './pages/CreatePost'
 import EditPost from './pages/EditPost'
 import CategoryPosts from './pages/CategoryPosts'
 import UserProfile from './pages/UserProfile'
-import Author from './pages/Authors'
+import Authors from './pages/Authors'
 import AuthorPosts from './pages/AuthorPosts'
 import Dashboard from './pages/Dashboard'
 import Logout from './pages/Logout'
@@ -30,7 +30,7 @@ const router = createBrowserRouter([
       {path: 'login',element: <Login />,},
       {path: 'register',element: <Register />,},
       {path: 'profile/:id',element: <UserProfile />,},
-      {path: 'author',element: <Author />,},
+      {path: 'authors',element: <Authors />,},
       {path: 'create',element: <CreatePost />,},
       {path: 'post/:id/edit', element: <EditPost />,},
       {path: 'myposts/:id',element: <Dashboard />,},
