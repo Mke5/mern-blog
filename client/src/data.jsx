@@ -4,7 +4,7 @@ const DumyPosts = [
     {
       id: '1',
       thumbnail: thumbnail1,
-      title: 'This is a Tiltlesgdgskj dksdkjksk kdjgskgjdhkjhdhuiuhsiudgiuvkuskd jhsd sdjhs jbdjbsbj sbdshjdhshjd jsbjdbjs djbsbdjsbjd',
+      title: 'This is a Title',
       desc: 'New Test',
       category: 'Art',
       authorId: 2
