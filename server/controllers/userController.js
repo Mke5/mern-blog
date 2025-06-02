@@ -1,8 +1,8 @@
 const User = require('../models/userModel')
 const HttpError = require('../models/errorModels')
-// const bcrypt = require('bcryptjs')
+const bcrypt = require('bcryptjs')
+const jwt = require('jsonwebtoken')
 
-const bcrypt = ''
 
 // register user controller
 const registerUser = async (req, res, next) => {
@@ -32,9 +32,9 @@ const registerUser = async (req, res, next) => {
 
 
         const newUser = await User.create({name, email, password})
-        res.status(201).json(newUser)
+        res.status(201).json(`New User ${newUser.email} registered`)
     } catch (error) {
-        return next(new HttpError('User registration failed.', 422))
+        return next(new HttpError(error, error.statusCode))
     }
 }
 
@@ -47,7 +47,32 @@ const registerUser = async (req, res, next) => {
 
 // login user
 const loginUser = async (req, res, next) => {
-    res.json('login user')
+    try {
+        let {email, password} = req.body
+        
+        if(!email || !password){
+            return next(new HttpError('Fill all fields', 422))
+        }
+
+        email = email.toLowerCase()
+
+        const user = await User.findOne({email: email})
+        
+        if(!user){
+            return next(new HttpError('Invalid credentials', 422))
+        }
+        const comparePass = await bcrypt.compare(password, user.password)
+        if(!comparePass){
+            return next(new HttpError('Invalid credentials', 422))
+        }
+
+        const {_id: id, name} = user
+        const token = jwt.sign({id, name}, process.env.JWT_SECRET, {expiresIn: "2d"})
+
+        res.status(200).json({token, id, name})
+    } catch (error) {
+        return next(new HttpError(error, error.statusCode))
+    }
 }
 
 
