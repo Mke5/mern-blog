@@ -7,6 +7,9 @@ const jwt = require('jsonwebtoken')
 // register user controller
 const registerUser = async (req, res, next) => {
     try {
+        if(!req.body){
+            return next(new HttpError('Fill in all Fields', 422))
+        }
         let {name, email, password, password2} = req.body
 
         if(!name || !email || !password){
@@ -78,14 +81,27 @@ const loginUser = async (req, res, next) => {
 
 // user profile {protected}
 const getUser = async (req, res, next) => {
-    res.json('user profile')
+    try {
+        const {id} = req.params
+        const user = await User.findById(id).select('-password')
+        if(!user){
+            return next(new HttpError('User not found', 404))
+        }
+        res.status(200).json(user)
+    } catch (error) {
+        return next(new HttpError(error, error.statusCode))
+    }
 }
 
 
 
 // change user profile picture {protected}
 const changeAvatar = async (req, res, next) => {
-    res.json('user profile picture change')
+    try{
+        
+    }catch(error){
+        return next(new HttpError(error, error.statusCode))
+    }
 }
 
 
@@ -97,7 +113,12 @@ const editUser = async (req, res, next) => {
 
 // get all authors
 const getAuthors = async (req, res, next) => {
-    res.json('get all authors')
+    try {
+        const authors = await User.find().select('-password')
+        res.status(200).json(authors)
+    } catch (error) {
+        return next(new HttpError(error, error.statusCode))
+    }
 }
 
 
