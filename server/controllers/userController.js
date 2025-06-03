@@ -33,7 +33,7 @@ const registerUser = async (req, res, next) => {
             return next(new HttpError('Passwords do not match.', 422))
         }
 
-        const salt = await bcrypt.genSalt(10)
+        const salt = await bcrypt.genSalt(12)
         password = await bcrypt.hash(password, salt)
 
 
@@ -155,8 +155,49 @@ const changeAvatar = async (req, res, next) => {
 
 // edit user details {protected}
 const editUser = async (req, res, next) => {
-    res.json('edit user')
-}
+    try {
+        if (!req.body) {
+            return next(new HttpError('Fill all fields!', 422));
+        }
+
+        const { name, email, currentPassword, newPassword, confirmPassword } = req.body;
+
+        if (!name || !email || !currentPassword || !newPassword || !confirmPassword) {
+            return next(new HttpError('Fill all fields!', 422));
+        }
+
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return next(new HttpError('User not found', 404));
+        }
+        if (user.email !== email) {
+            const emailExists = await User.findOne({ email });
+            if (emailExists) {
+                return next(new HttpError('Email already in use by another account', 409));
+            }
+        }
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch) {
+            return next(new HttpError('Incorrect current password', 401));
+        }
+        if (newPassword !== confirmPassword) {
+            return next(new HttpError('New passwords do not match', 422));
+        }
+        const salt = await bcrypt.genSalt(12);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+        user.name = name;
+        user.email = email;
+        user.password = hashedPassword;
+
+        await user.save();
+
+        res.status(200).json({ message: 'User updated successfully' });
+    } catch (error) {
+        console.error(error);
+        return next(new HttpError(error.message || 'Server Error', 500));
+    }
+};
 
 
 // get all authors
