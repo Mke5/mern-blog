@@ -1,7 +1,10 @@
 const User = require('../models/userModel')
-const HttpError = require('../models/errorModels')
+const HttpError = require('../models/errorModel')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
+const fs = require('fs')
+const path = require('path')
+const {v4: uuid} = require('uuid')
 
 
 // register user controller
@@ -98,7 +101,52 @@ const getUser = async (req, res, next) => {
 // change user profile picture {protected}
 const changeAvatar = async (req, res, next) => {
     try{
-        
+        if(!req.user || !req.user.id){
+            return next(new HttpError('Cannot identify user', 401))
+        }
+
+        if(!req.files){
+            return next(new HttpError('PLease choose an image', 422))
+        }
+
+        const user = await User.findById(req.user.id)
+        if (!user) {
+            return next(new HttpError('User not found', 404));
+        }
+        if(user.avatar){
+            fs.unlink(path.join(__dirname, '..', 'uploads', user.avatar), (err) => {
+                if(err){
+                    return next(new HttpError(err, err.statusCode))
+                }
+            })
+        }
+
+        const {avatar} = req.files
+        if(avatar.size > 500000){
+            return next(new HttpError('file size greater than 500kb', 422))
+        }
+
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        if (!allowedTypes.includes(avatar.mimetype)) {
+            return next(new HttpError('Only image files are allowed (jpeg, png, gif, webp)', 422));
+        }
+
+        const fileExt = path.extname(avatar.name);
+        const safeBaseName = path.basename(avatar.name, fileExt).replace(/[^a-zA-Z0-9_-]/g, '');
+        const newFileName = `${safeBaseName}-${uuid()}${fileExt}`;
+        const uploadPath = path.join(__dirname, '..', 'uploads', newFileName);
+
+        avatar.mv(uploadPath, async (err) => {
+            if (err) {
+                return next(new HttpError('Failed to upload image', 500));
+            }
+
+            user.avatar = newFileName;
+            await user.save();
+
+            res.status(200).json({ message: 'Avatar updated successfully', avatar: newFileName });
+        });
+
     }catch(error){
         return next(new HttpError(error, error.statusCode))
     }
