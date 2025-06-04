@@ -1,5 +1,6 @@
 const Post = require('../models/postModel')
 const User = require('../models/userModel')
+const mongoose = require('mongoose')
 const path = require('path')
 const fs = require('fs')
 const {v4, uuid} = require('uuid')
@@ -62,9 +63,19 @@ const createPost = async (req, res, next) => {
 
 
 const getPost = async (req, res, next) => {
-    res.json('get post')
     try{
-
+        if(!req.params.id){
+            return next(new HttpError('Post ID is required', 400))
+        }
+        if (mongoose.Types.ObjectId.isValid(req.params.id)){
+            const post = await Post.findById(req.params.id).populate('userId', 'name email')
+            if(!post){
+                return next(new HttpError('Post not found', 404))
+            }
+            res.status(200).json(post)
+        }else {
+            return res.status(400).json({ error: 'Invalid post ID' })
+        }
     }catch(error){
         return next(new HttpError(error.message, error.statusCode))
     }
@@ -86,14 +97,49 @@ const getPosts = async (req, res, next) => {
 
 
 const getCatPosts = async (req, res, next) => {
-    res.json('get categroy posts')
+    try{
+        if(!req.params){
+            return next(new HttpError('No parameters provided', 400))
+        }
+        const {category} = req.params
+        if(!category){
+            return next(new HttpError('Category is required', 400))
+        }
+
+        const posts = await Post.find({category}).sort({createdAt: -1}).populate('userId', 'name email')
+        if(!posts || posts.length === 0){
+            return next(new HttpError('No posts found for this category', 404))
+        }
+        res.status(200).json(posts)
+    }catch(error){
+        return next(new HttpError(error.message, error.statusCode))
+    }
 }
 
 
 
 
 const getUserPosts = async (req, res, next) => {
-    res.json('get user posts')
+    try {
+        const {id} = req.params
+        if(!id){
+            return next(new HttpError('User ID is required', 400))
+        }
+
+        const user = await User.findById(id)
+        if(!user){
+            return next(new HttpError('User not found', 404))
+        }
+
+        const posts = await Post.find({userId: id}).sort({createdAt: -1}).populate('userId', 'name email')
+        if(!posts || posts.length === 0){
+            return next(new HttpError('No posts found for this user', 404))
+        }
+
+        res.status(200).json(posts)
+    } catch (error) {
+        return next(new HttpError(error.message, error.statusCode))
+    }
 }
 
 
@@ -107,8 +153,37 @@ const editPost = async (req, res, next) => {
 
 
 const deletePost = async (req, res, next) => {
-    res.json('delete post')
-}
+    try {
+        const { id } = req.params;
+    
+        if (!id) {
+            return next(new HttpError('Post ID is required', 400));
+        }
+    
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ error: 'Invalid post ID' });
+        }
+    
+        const post = await Post.findById(id);
+        if (!post) {
+            return next(new HttpError('Post not found', 404));
+        }
+        if (!post.userId.equals(req.user.id)) {
+            return next(new HttpError('You are not authorized to delete this post', 403));
+        }
+        await Post.findByIdAndDelete(id);
+        await User.findByIdAndUpdate(req.user.id, { $inc: { posts: -1 } });
+        const imagePath = path.join(__dirname, '..', 'uploads', post.image);
+        fs.unlink(imagePath, (err) => {
+            if (err) {
+            console.error('Failed to delete image file:', err);
+            }
+        });
+        res.status(200).json({ message: 'Post deleted successfully' });
+    } catch (error) {
+      return next(new HttpError(error.message || 'Something went wrong', 500));
+    }
+};
 
 
 
