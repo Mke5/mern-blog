@@ -63,11 +63,24 @@ const createPost = async (req, res, next) => {
 
 const getPost = async (req, res, next) => {
     res.json('get post')
+    try{
+
+    }catch(error){
+        return next(new HttpError(error.message, error.statusCode))
+    }
 }
 
 
 const getPosts = async (req, res, next) => {
-    res.json('getposts')
+    try{
+        const posts = await Post.find().sort({createdAt: -1}).populate('userId', 'name email')
+        if(!posts || posts.length === 0){
+            return next(new HttpError('No posts found', 404))
+        }
+        res.status(200).json(posts)
+    }catch(error){
+        return next(new HttpError(error.message, error.statusCode))
+    }
 }
 
 

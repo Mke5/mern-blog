@@ -5,8 +5,8 @@ const authMiddleware = require('../middleware/authMiddleware')
 const router = Router()
 
 
-router.post('/', authMiddleware,  createPost)
 router.get('/', getPosts)
+router.post('/', authMiddleware,  createPost)
 router.get('/category/:category', getCatPosts)
 router.get('/user/:id', getUserPosts)
 router.patch('/:id', authMiddleware, editPost)

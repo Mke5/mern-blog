@@ -40,7 +40,7 @@ const registerUser = async (req, res, next) => {
         const newUser = await User.create({name, email, password})
         res.status(201).json(`New User ${newUser.email} registered`)
     } catch (error) {
-        return next(new HttpError(error, error.statusCode))
+        return next(new HttpError(error.message, error.statusCode))
     }
 }
 
@@ -77,7 +77,7 @@ const loginUser = async (req, res, next) => {
 
         res.status(200).json({token, id, name})
     } catch (error) {
-        return next(new HttpError(error, error.statusCode))
+        return next(new HttpError(error.message, error.statusCode))
     }
 }
 
@@ -92,7 +92,7 @@ const getUser = async (req, res, next) => {
         }
         res.status(200).json(user)
     } catch (error) {
-        return next(new HttpError(error, error.statusCode))
+        return next(new HttpError(error.message, error.statusCode))
     }
 }
 
@@ -148,7 +148,7 @@ const changeAvatar = async (req, res, next) => {
         });
 
     }catch(error){
-        return next(new HttpError(error, error.statusCode))
+        return next(new HttpError(error.message, error.statusCode))
     }
 }
 
@@ -194,8 +194,7 @@ const editUser = async (req, res, next) => {
 
         res.status(200).json({ message: 'User updated successfully' });
     } catch (error) {
-        console.error(error);
-        return next(new HttpError(error.message || 'Server Error', 500));
+        return next(new HttpError(error.message, 500));
     }
 };
 
@@ -206,7 +205,7 @@ const getAuthors = async (req, res, next) => {
         const authors = await User.find().select('-password')
         res.status(200).json(authors)
     } catch (error) {
-        return next(new HttpError(error, error.statusCode))
+        return next(new HttpError(error.message, error.statusCode))
     }
 }
 
