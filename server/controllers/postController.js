@@ -146,9 +146,28 @@ const getUserPosts = async (req, res, next) => {
 
 
 const editPost = async (req, res, next) => {
-    res.json('edit post')
-}
+    const { postId } = req.params;
+    const { title, category, description, image } = req.body;
 
+    try {
+        const post = await Post.findById(postId);
+        if (!post) {
+            return next(new HttpError('Post not found', 404))
+        }
+        if (post.userId.toString() !== req.user.id) {
+            return next(new HttpError('You are not authorized to edit this post', 403))
+        }
+        post.title = title || post.title;
+        post.category = category || post.category;
+        post.description = description || post.description;
+        post.image = image || post.image;
+        const updatedPost = await post.save();
+
+        return res.status(200).json({ message: 'Post updated successfully', post: updatedPost });
+    } catch (error) {
+        return next(new HttpError(error.message, 500))
+    }
+};
 
 
 
