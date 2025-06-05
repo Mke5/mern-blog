@@ -146,26 +146,75 @@ const getUserPosts = async (req, res, next) => {
 
 
 const editPost = async (req, res, next) => {
-    const { postId } = req.params;
-    const { title, category, description, image } = req.body;
-
     try {
-        const post = await Post.findById(postId);
-        if (!post) {
-            return next(new HttpError('Post not found', 404))
-        }
-        if (post.userId.toString() !== req.user.id) {
-            return next(new HttpError('You are not authorized to edit this post', 403))
-        }
-        post.title = title || post.title;
-        post.category = category || post.category;
-        post.description = description || post.description;
-        post.image = image || post.image;
-        const updatedPost = await post.save();
+        const postId = req.params.id;
 
-        return res.status(200).json({ message: 'Post updated successfully', post: updatedPost });
+        if (!req.body && !req.files) {
+            return next(new HttpError('No data provided', 400));
+        }
+
+        const { title, category, description } = req.body;
+
+        let post = await Post.findById(postId);
+
+        if (!post) {
+            return next(new HttpError('Post not found', 404));
+        }
+
+        if (post.userId.toString() !== req.user.id) {
+            return next(new HttpError('Unauthorized', 403));
+        }
+
+        // Update fields if provided
+        if (title) post.title = title;
+        if (category) post.category = category;
+        if (description) post.description = description;
+
+        // Handle new image if provided
+        if (req.files && req.files.image) {
+            const thumbnail = req.files.image;
+
+            if (thumbnail.size > 1024 * 1024 * 2) {
+                return next(new HttpError('Image size should be less than 2MB', 400));
+            }
+
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+            if (!allowedTypes.includes(thumbnail.mimetype)) {
+                return next(new HttpError('Only image files are allowed (jpeg, png, gif, webp)', 422));
+            }
+
+            // Prepare new image
+            const fileExt = path.extname(thumbnail.name);
+            const safeBaseName = path.basename(thumbnail.name, fileExt).replace(/[^a-zA-Z0-9_-]/g, '');
+            const newFileName = `${safeBaseName}-${uuid()}${fileExt}`;
+            const uploadPath = path.join(__dirname, '..', 'uploads', newFileName);
+
+            // Move new image
+            thumbnail.mv(uploadPath, async (err) => {
+                if (err) {
+                    return next(new HttpError('Failed to upload image', 500));
+                }
+
+                // Delete old image from server
+                const oldImagePath = path.join(__dirname, '..', 'uploads', post.image);
+                fs.unlink(oldImagePath, (unlinkErr) => {
+                    if (unlinkErr) {
+                        console.warn('Failed to delete old image:', unlinkErr.message);
+                    }
+                });
+
+                post.image = newFileName;
+                await post.save();
+
+                res.status(200).json(post);
+            });
+        } else {
+            await post.save();
+            res.status(200).json(post);
+        }
+
     } catch (error) {
-        return next(new HttpError(error.message, 500))
+        return next(new HttpError(error.message, 500));
     }
 };
 
